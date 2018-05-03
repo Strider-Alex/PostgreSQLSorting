@@ -1,18 +1,4 @@
 #pragma once
-/*
- *	qsort.c: standard quicksort algorithm
- *
- *	Modifications from vanilla NetBSD source:
- *	  Add do ... while() macro fix
- *	  Remove __inline, _DIAGASSERTs, __P
- *	  Remove ill-considered "swap_cnt" switch to insertion sort,
- *	  in favor of a simple check for presorted input.
- *	  Take care to recurse on the smaller partition, to bound stack usage.
- *
- *	CAUTION: if you change this file, see also qsort_arg.c, gen_qsort_tuple.pl
- *
- *	src/port/qsort.c
- */
 
 #include <string.h>
 #include "swap.h"

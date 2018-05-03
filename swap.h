@@ -1,4 +1,11 @@
 #pragma once
+/* 
+ * This header file contains macros and functions for SWAP operation,
+ * which is included by most sorting routines
+ * Need predefinition for es, swaptype
+ * Use SWAPINIT to initialize
+*/
+
 #define swapcode(TYPE, parmi, parmj, n) \
 do {		\
 	size_t i = (n) / sizeof (TYPE);			\

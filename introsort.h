@@ -1,12 +1,17 @@
 #pragma once
+/*
+*	introsort.h: introsort algorithm
+*
+*	Modfied from vanilla QuickSort code. When quicksort recursive depth is out of bound,
+*	turn to use heap sort
+*/
 #include <math.h>
 #include <memory.h>
 #include "swap.h"
 
 #define Min(x, y)		((x) < (y) ? (x) : (y))
 
-// To heapify a subtree rooted with node i which is
-// an index in arr[]. n is size of heap
+/* To heapify a subtree rooted with node i which is an index in arr[]. n is size of heap */
 void heapify(char* begin, int n, int i, int es, int swaptype, int(*cmp) (const void *, const void *))
 {
 	int largest = i;  // Initialize largest as root
@@ -31,7 +36,8 @@ void heapify(char* begin, int n, int i, int es, int swaptype, int(*cmp) (const v
 	}
 }
 
-void heapSort(char* a, int n, int es, int swaptype, int(*cmp) (const void *, const void *))
+/* Heap sort subroutine */
+void heap_sort(char* a, int n, int es, int swaptype, int(*cmp) (const void *, const void *))
 {
 	// Build heap (rearrange array)
 	for (int i = n / 2 - 1; i >= 0; i--)
@@ -55,6 +61,7 @@ static char *med3(char *a, char *b, char *c, int(*cmp) (const void *, const void
 		: (cmp(b, c) > 0 ? b : (cmp(a, c) < 0 ? a : c));
 }
 
+/* Introsort recursive funtion */
 void
 introsort_util(void *a, size_t n, size_t es, int depth_limit, int(*cmp) (const void *, const void *))
 {
@@ -80,10 +87,11 @@ loop:SWAPINIT(a, es);
 				swap(pl, pl - es);
 		return;
 	}
+	/* depth out of bound */
 	if (!depth_limit)
 	{
 		//Use heap sort
-		heapSort((char*)a, n, es, swaptype, cmp);
+		heap_sort((char*)a, n, es, swaptype, cmp);
 		return;
 	}
 	/*
