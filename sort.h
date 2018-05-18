@@ -24,6 +24,10 @@
 #define SORT_CMP(x, y)  ((x) < (y) ? -1 : ((x) == (y) ? 0 : 1))
 #endif
 
+#ifndef INSERTION_THRESHOLD
+#define INSERTION_THRESHOLD 16U
+#endif
+
 #ifndef TIM_SORT_STACK_SIZE
 #define TIM_SORT_STACK_SIZE 128
 #endif
@@ -147,6 +151,7 @@ static __inline size_t rbnd(size_t len) {
 #define MEDIAN                         SORT_MAKE_STR(median)
 #define QUICK_SORT                     SORT_MAKE_STR(quick_sort)
 #define INTRO_SORT                     SORT_MAKE_STR(intro_sort)
+#define DUAL_PIVOT_QUICK_SORT          SORT_MAKE_STR(dual_pivot_quick_sort)
 #define MERGE_SORT                     SORT_MAKE_STR(merge_sort)
 #define MERGE_SORT_IN_PLACE            SORT_MAKE_STR(merge_sort_in_place)
 #define MERGE_SORT_IN_PLACE_RMERGE     SORT_MAKE_STR(merge_sort_in_place_rmerge)
@@ -158,6 +163,7 @@ static __inline size_t rbnd(size_t len) {
 #define QUICK_SORT_PARTITION           SORT_MAKE_STR(quick_sort_partition)
 #define QUICK_SORT_RECURSIVE           SORT_MAKE_STR(quick_sort_recursive)
 #define INTRO_SORT_RECURSIVE           SORT_MAKE_STR(intro_sort_recursive)
+#define DUAL_PIVOT_QUICK_SORT_RECURSIVE  SORT_MAKE_STR(dual_pivot_quick_sort_recursive)
 #define HEAP_SIFT_DOWN                 SORT_MAKE_STR(heap_sift_down)
 #define HEAPIFY                        SORT_MAKE_STR(heapify)
 #define TIM_SORT_RUN_T                 SORT_MAKE_STR(tim_sort_run_t)
@@ -308,6 +314,7 @@ static __inline size_t BINARY_INSERTION_FIND(SORT_TYPE *dst, const SORT_TYPE x,
 }
 
 /* Binary insertion sort, but knowing that the first "start" entries are sorted.  Used in timsort. */
+//TODO: consider pair insertion sort (used in JDK8)
 static void BINARY_INSERTION_SORT_START(SORT_TYPE *dst, const size_t start, const size_t size) {
 	size_t i;
 
@@ -721,7 +728,7 @@ static void QUICK_SORT_RECURSIVE(SORT_TYPE *dst, const size_t left, const size_t
 		return;
 	}
 
-	if ((right - left + 1U) < 16U) {
+	if ((right - left + 1U) < INSERTION_THRESHOLD) {
 		BINARY_INSERTION_SORT(&dst[left], right - left + 1U);
 		return;
 	}
@@ -786,6 +793,299 @@ static void INTRO_SORT_RECURSIVE(SORT_TYPE *dst, const size_t left, const size_t
 void INTRO_SORT(SORT_TYPE *dst, const size_t size) {
 
 	INTRO_SORT_RECURSIVE(dst, 0U, size - 1U, 1.5 * log(size));
+}
+
+/* dualpivot quicksort recursive function */
+static void DUAL_PIVOT_QUICK_SORT_RECURSIVE(SORT_TYPE *dst, const size_t left, const size_t right) {
+	const size_t length = right - left + 1U;
+
+	// Use insertion sort on tiny arrays
+	if (length < INSERTION_THRESHOLD) {
+		BINARY_INSERTION_SORT(&dst[left], length);
+		return;
+	}
+
+	// Inexpensive approximation of length / 7
+	size_t seventh = (length >> 3) + (length >> 6) + 1U;
+
+	/*
+	* Sort five evenly spaced elements around (and including) the
+	* center element in the range. These elements will be used for
+	* pivot selection as described below. The choice for spacing
+	* these elements was empirically determined to work well on
+	* a wide variety of inputs.
+	*/
+	size_t e3 = (left + right) >> 1; // The midpoint
+	size_t e2 = e3 - seventh;
+	size_t e1 = e2 - seventh;
+	size_t e4 = e3 + seventh;
+	size_t e5 = e4 + seventh;
+
+	// Sort these elements using insertion sort
+	if (SORT_CMP(dst[e2],dst[e1])<0) { SORT_TYPE t = dst[e2]; dst[e2] = dst[e1]; dst[e1] = t; }
+
+	if (SORT_CMP(dst[e3],dst[e2])<0) {
+		SORT_TYPE t = dst[e3]; dst[e3] = dst[e2]; dst[e2] = t;
+		if (SORT_CMP(t, dst[e1]) < 0) { dst[e2] = dst[e1]; dst[e1] = t; }
+	}
+	if (SORT_CMP(dst[e4],dst[e3])<0) {
+		SORT_TYPE t = dst[e4]; dst[e4] = dst[e3]; dst[e3] = t;
+		if (SORT_CMP(t, dst[e2]) < 0) {
+			dst[e3] = dst[e2]; dst[e2] = t;
+			if (SORT_CMP(t, dst[e1]) < 0) { dst[e2] = dst[e1]; dst[e1] = t; }
+		}
+	}
+	if (SORT_CMP(dst[e5], dst[e4])<0) {
+		SORT_TYPE t = dst[e5]; dst[e5] = dst[e4]; dst[e4] = t;
+		if (SORT_CMP(t,dst[e3])<0) {
+			dst[e4] = dst[e3]; dst[e3] = t;
+			if (SORT_CMP(t, dst[e2])<0) {
+				dst[e3] = dst[e2]; dst[e2] = t;
+				if (SORT_CMP(t, dst[e1])<0) { dst[e2] = dst[e1]; dst[e1] = t; }
+			}
+		}
+	}
+
+	// Pointers
+	size_t less = left;  // The index of the first element of center part
+	size_t great = right; // The index before the first element of right part
+
+	if (SORT_CMP(dst[e1], dst[e2]) && SORT_CMP(dst[e2], dst[e3]) && SORT_CMP(dst[e3], dst[e4]) && SORT_CMP(dst[e4], dst[e5])) {
+		/*
+		* Use the second and fourth of the five sorted elements as pivots.
+		* These values are inexpensive approximations of the first and
+		* second terciles of the array. Note that pivot1 <= pivot2.
+		*/
+		SORT_TYPE pivot1 = dst[e2];
+		SORT_TYPE pivot2 = dst[e4];
+
+		/*
+		* The first and the last elements to be sorted are moved to the
+		* locations formerly occupied by the pivots. When partitioning
+		* is complete, the pivots are swapped back into their final
+		* positions, and excluded from subsequent sorting.
+		*/
+		dst[e2] = dst[left];
+		dst[e4] = dst[right];
+
+		/*
+		* Skip elements, which are less or greater than pivot values.
+		*/
+		while (SORT_CMP(dst[++less], pivot1) < 0);
+		while (SORT_CMP(dst[--great], pivot2) > 0);
+
+		/*
+		* Partitioning:
+		*
+		*   left part           center part                   right part
+		* +--------------------------------------------------------------+
+		* |  < pivot1  |  pivot1 <= && <= pivot2  |    ?    |  > pivot2  |
+		* +--------------------------------------------------------------+
+		*               ^                          ^       ^
+		*               |                          |       |
+		*              less                        k     great
+		*
+		* Invariants:
+		*
+		*              all in (left, less)   < pivot1
+		*    pivot1 <= all in [less, k)     <= pivot2
+		*              all in (great, right) > pivot2
+		*
+		* Pointer k is the first index of ?-part.
+		*/
+		for (int k = less - 1; ++k <= great; ) {
+			SORT_TYPE ak = dst[k];
+			if (SORT_CMP(ak, pivot1) < 0) { // Move a[k] to left part
+				dst[k] = dst[less];
+				/*
+				* Here and below we use "a[i] = b; i++;" instead
+				* of "a[i++] = b;" due to performance issue.
+				*/
+				dst[less] = ak;
+				++less;
+			}
+			else if (SORT_CMP(ak, pivot2) > 0) { // Move a[k] to right part
+				while (SORT_CMP(dst[great], pivot2) > 0) {
+					if (great-- == k) {
+						goto jump1;
+					}
+				}
+				if (SORT_CMP(dst[great], pivot1) < 0) { // a[great] <= pivot2
+					dst[k] = dst[less];
+					dst[less] = dst[great];
+					++less;
+				}
+				else { // pivot1 <= a[great] <= pivot2
+					dst[k] = dst[great];
+				}
+				/*
+				* Here and below we use "a[i] = b; i--;" instead
+				* of "a[i--] = b;" due to performance issue.
+				*/
+				dst[great] = ak;
+				--great;
+			}
+		}
+	jump1:
+		// Swap pivots into their final positions
+		dst[left] = dst[less - 1]; dst[less - 1] = pivot1;
+		dst[right] = dst[great + 1]; dst[great + 1] = pivot2;
+
+		// Sort left and right parts recursively, excluding known pivots
+		DUAL_PIVOT_QUICK_SORT_RECURSIVE(dst, left, less - 2);
+		DUAL_PIVOT_QUICK_SORT_RECURSIVE(dst, great + 2, right);
+
+		/*
+		* If center part is too large (comprises > 4/7 of the array),
+		* swap internal pivot values to ends.
+		*/
+		if (less < e1 && e5 < great) {
+			/*
+			* Skip elements, which are equal to pivot values.
+			*/
+			while (!SORT_CMP(dst[less], pivot1)) {
+				++less;
+			}
+
+			while (!SORT_CMP(dst[great], pivot2)) {
+				--great;
+			}
+
+			/*
+			* Partitioning:
+			*
+			*   left part         center part                  right part
+			* +----------------------------------------------------------+
+			* | == pivot1 |  pivot1 < && < pivot2  |    ?    | == pivot2 |
+			* +----------------------------------------------------------+
+			*              ^                        ^       ^
+			*              |                        |       |
+			*             less                      k     great
+			*
+			* Invariants:
+			*
+			*              all in (*,  less) == pivot1
+			*     pivot1 < all in [less,  k)  < pivot2
+			*              all in (great, *) == pivot2
+			*
+			* Pointer k is the first index of ?-part.
+			*/
+			for (int k = less - 1; ++k <= great; ) {
+				SORT_TYPE ak = dst[k];
+				if (!SORT_CMP(ak, pivot1)) { // Move dst[k] to left part
+					dst[k] = dst[less];
+					dst[less] = ak;
+					++less;
+				}
+				else if (!SORT_CMP(ak, pivot2)) { // Move dst[k] to right part
+					while (!SORT_CMP(dst[great], pivot2)) {
+						if (great-- == k) {
+							goto jump2;
+						}
+					}
+					if (!SORT_CMP(dst[great], pivot1)) { // dst[great] < pivot2
+						dst[k] = dst[less];
+						/*
+						* Even though dst[great] equals to pivot1, the
+						* assignment dst[less] = pivot1 may be incorrect,
+						* if dst[great] and pivot1 are floating-point zeros
+						* of different signs. Therefore in float and
+						* double sorting methods we have to use more
+						* accurate assignment dst[less] = dst[great].
+						*/
+						dst[less] = pivot1;
+						++less;
+					}
+					else { // pivot1 < dst[great] < pivot2
+						dst[k] = dst[great];
+					}
+					dst[great] = ak;
+					--great;
+				}
+			}
+		jump2:;
+		}
+
+		// Sort center part recursively
+		DUAL_PIVOT_QUICK_SORT_RECURSIVE(dst, less, great);
+
+	}
+	else { // Partitioning with one pivot
+		   /*
+		   * Use the third of the five sorted elements as pivot.
+		   * This value is inexpensive approximation of the median.
+		   */
+		SORT_TYPE pivot = dst[e3];
+
+		/*
+		* Partitioning degenerates to the traditional 3-way
+		* (or "Dutch National Flag") schema:
+		*
+		*   left part    center part              right part
+		* +-------------------------------------------------+
+		* |  < pivot  |   == pivot   |     ?    |  > pivot  |
+		* +-------------------------------------------------+
+		*              ^              ^        ^
+		*              |              |        |
+		*             less            k      great
+		*
+		* Invariants:
+		*
+		*   all in (left, less)   < pivot
+		*   all in [less, k)     == pivot
+		*   all in (great, right) > pivot
+		*
+		* Pointer k is the first index of ?-part.
+		*/
+		for (int k = less; k <= great; ++k) {
+			if (!SORT_CMP(dst[k], pivot)) {
+				continue;
+			}
+			SORT_TYPE ak = dst[k];
+			if (SORT_CMP(ak, pivot) < 0) { // Move dst[k] to left part
+				dst[k] = dst[less];
+				dst[less] = ak;
+				++less;
+			}
+			else { // dst[k] > pivot - Move dst[k] to right part
+				while (SORT_CMP(dst[great], pivot) > 0) {
+					--great;
+				}
+				if (SORT_CMP(dst[great], pivot) < 0) { // dst[great] <= pivot
+					dst[k] = dst[less];
+					dst[less] = dst[great];
+					++less;
+				}
+				else { // dst[great] == pivot
+					   /*
+					   * Even though dst[great] equals to pivot, the
+					   * assignment dst[k] = pivot may be incorrect,
+					   * if dst[great] and pivot are floating-point
+					   * zeros of different signs. Therefore in float
+					   * and double sorting methods we have to use
+					   * more accurate assignment dst[k] = dst[great].
+					   */
+					dst[k] = pivot;
+				}
+				dst[great] = ak;
+				--great;
+			}
+		}
+
+		/*
+		* Sort left and right parts recursively.
+		* All elements from center part are equal
+		* and, therefore, already sorted.
+		*/
+		DUAL_PIVOT_QUICK_SORT_RECURSIVE(dst, left, less - 1);
+		DUAL_PIVOT_QUICK_SORT_RECURSIVE(dst, great + 1, right);
+	}
+}
+
+/* Dual-pivot quicksort implementation, based on JDK8 */
+void DUAL_PIVOT_QUICK_SORT(SORT_TYPE *dst, const size_t size) {
+
+	DUAL_PIVOT_QUICK_SORT_RECURSIVE(dst, 0U, size - 1U);
 }
 
 /* timsort implementation, based on timsort.txt */
@@ -2389,71 +2689,3 @@ void BUBBLE_SORT(SORT_TYPE *dst, const size_t size) {
 		n = newn;
 	}
 }
-
-#undef QUICK_SORT
-#undef MEDIAN
-#undef SORT_CONCAT
-#undef SORT_MAKE_STR1
-#undef SORT_MAKE_STR
-#undef SORT_CMP
-#undef TEMP_STORAGE_T
-#undef TIM_SORT_RUN_T
-#undef PUSH_NEXT
-#undef SORT_SWAP
-#undef SORT_CONCAT
-#undef SORT_MAKE_STR1
-#undef SORT_MAKE_STR
-#undef BINARY_INSERTION_FIND
-#undef BINARY_INSERTION_SORT_START
-#undef BINARY_INSERTION_SORT
-#undef REVERSE_ELEMENTS
-#undef COUNT_RUN
-#undef TIM_SORT
-#undef TIM_SORT_RESIZE
-#undef TIM_SORT_COLLAPSE
-#undef TIM_SORT_RUN_T
-#undef TEMP_STORAGE_T
-#undef MERGE_SORT
-#undef MERGE_SORT_IN_PLACE
-#undef MERGE_SORT_IN_PLACE_RMERGE
-#undef MERGE_SORT_IN_PLACE_BACKMERGE
-#undef MERGE_SORT_IN_PLACE_FRONTMERGE
-#undef MERGE_SORT_IN_PLACE_ASWAP
-#undef GRAIL_SWAP1
-#undef REC_STABLE_SORT
-#undef GRAIL_REC_MERGE
-#undef GRAIL_SORT_DYN_BUFFER
-#undef GRAIL_SORT_FIXED_BUFFER
-#undef GRAIL_COMMON_SORT
-#undef GRAIL_SORT
-#undef GRAIL_COMBINE_BLOCKS
-#undef GRAIL_LAZY_STABLE_SORT
-#undef GRAIL_MERGE_WITHOUT_BUFFER
-#undef GRAIL_ROTATE
-#undef GRAIL_BIN_SEARCH_LEFT
-#undef GRAIL_BUILD_BLOCKS
-#undef GRAIL_FIND_KEYS
-#undef GRAIL_MERGE_BUFFERS_LEFT_WITH_X_BUF
-#undef GRAIL_BIN_SEARCH_RIGHT
-#undef GRAIL_MERGE_BUFFERS_LEFT
-#undef GRAIL_SMART_MERGE_WITH_X_BUF
-#undef GRAIL_MERGE_LEFT_WITH_X_BUF
-#undef GRAIL_SMART_MERGE_WITHOUT_BUFFER
-#undef GRAIL_SMART_MERGE_WITH_BUFFER
-#undef GRAIL_MERGE_RIGHT
-#undef GRAIL_MERGE_LEFT
-#undef GRAIL_SWAP_N
-#undef SQRT_SORT
-#undef SQRT_SORT_BUILD_BLOCKS
-#undef SQRT_SORT_MERGE_BUFFERS_LEFT_WITH_X_BUF
-#undef SQRT_SORT_MERGE_DOWN
-#undef SQRT_SORT_MERGE_LEFT_WITH_X_BUF
-#undef SQRT_SORT_MERGE_RIGHT
-#undef SQRT_SORT_SWAP_N
-#undef SQRT_SORT_SWAP_1
-#undef SQRT_SORT_SMART_MERGE_WITH_X_BUF
-#undef SQRT_SORT_SORT_INS
-#undef SQRT_SORT_COMBINE_BLOCKS
-#undef SQRT_SORT_COMMON_SORT
-#undef SORT_CMP_A
-#undef BUBBLE_SORT
