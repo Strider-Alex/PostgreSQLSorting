@@ -2,7 +2,13 @@
 #include<string.h>
 #include<stdlib.h>
 
-#define TYPE_CODE 1
+/* TYPE CODE: 
+ * 0 - int, 1 - char, 2 - string
+ * BENCHMARK MODE:
+ * 0 - count number of comparisons
+ */
+#define TYPE_CODE 0
+#define BENCHMARK_MODE 0
 
 #if TYPE_CODE == 0
 #define SORT_NAME int
@@ -24,9 +30,17 @@ The default is
 but the one below is often faster for integer types.
 */
 #if TYPE_CODE == 2
-#define SORT_CMP(x, y) (strcmp((x).data,(y).data))
+#define _SORT_CMP(x, y) (strcmp((x).data,(y).data))
 #else
-#define SORT_CMP(x, y) (x - y)
+#define _SORT_CMP(x, y) (x - y)
+#endif
+
+int CMP_COUNT = 0; // number of comparisons
+
+#if BENCHMARK_MODE == 0
+#define SORT_CMP(x, y)((CMP_COUNT++,_SORT_CMP(x,y)))
+#else
+#define SORT_CMP(x, y)(_SORT_CMP(x, y))
 #endif
 
 #include "sort.h"
@@ -34,7 +48,11 @@ but the one below is often faster for integer types.
 #define ARRAYSIZE 100
 #define MAX_ELEMENT 1000
 
+
 int cmp(const void *a, const void *b) {
+#if BENCHMARK_MODE == 0
+	CMP_COUNT++;
+#endif
 #if TYPE_CODE == 2
 	return strcmp((*((SORT_TYPE*)a)).data, (*((SORT_TYPE*)b)).data);
 #else
@@ -42,14 +60,16 @@ int cmp(const void *a, const void *b) {
 #endif
 }
 
-void printElement(SORT_TYPE e) {
+void printElements(SORT_TYPE* a,size_t size) {
+	for (int i = 0; i < size; i++) {
 #if TYPE_CODE == 0
-	printf("%d ", e);
+		printf("%d ", a[i]);
 #elif TYPE_CODE == 1
-	printf("%c ", e);
+		printf("%c ", a[i]);
 #elif TYPE_CODE == 2
-	printf("%s ", e.data);
+		printf("%s ", a[i].data);
 #endif
+	}
 }
 
 void initArray(SORT_TYPE* a) {
@@ -64,6 +84,18 @@ void initArray(SORT_TYPE* a) {
 	}
 }
 
+void testSorting(void (*sort)(SORT_TYPE*,size_t), SORT_TYPE* a, SORT_TYPE* copy, char* name) {
+	printf("%s:\n", name);
+	memcpy(a, copy, ARRAYSIZE * sizeof(SORT_TYPE));
+	CMP_COUNT = 0;
+	sort(a, ARRAYSIZE);
+	printElements(a, ARRAYSIZE);
+#if BENCHMARK_MODE == 0
+	printf("#comparisons: %d", CMP_COUNT);
+#endif
+	puts("\n");
+}
+
 int main() {
 	SORT_TYPE a[ARRAYSIZE], copy[ARRAYSIZE];
 	srand(0);
@@ -72,44 +104,32 @@ int main() {
 
 	memcpy(copy, a, ARRAYSIZE * sizeof(SORT_TYPE));
 
-	//c standard quick sort
+	// c standard quick sort
+	puts("c standard quick sort:");
+	CMP_COUNT = 0;
 	qsort(a, ARRAYSIZE, sizeof(SORT_TYPE), cmp);
-	for (int i = 0; i < ARRAYSIZE; i++) {
-		printElement(a[i]);
-	}
+	printElements(a, ARRAYSIZE);
+#if BENCHMARK_MODE == 0
+	printf("#comparisons: %d", CMP_COUNT);
+#endif
 	puts("\n");
 
-	//wekipedia version quick sort
-	memcpy(a, copy, ARRAYSIZE * sizeof(SORT_TYPE));
-	QUICK_SORT(a, ARRAYSIZE);
-	for (int i = 0; i < ARRAYSIZE; i++) {
-		printElement(a[i]);
-	}
-	puts("\n");
+	// wekipedia version quick sort
+	testSorting(QUICK_SORT,a,copy,"wekipedia version quick sort");
 
 	// tim sort
-	memcpy(a, copy, ARRAYSIZE * sizeof(SORT_TYPE));
-	TIM_SORT(a, ARRAYSIZE);
-	for (int i = 0; i < ARRAYSIZE; i++) {
-		printElement(a[i]);
-	}
-	puts("\n");
+	testSorting(TIM_SORT, a, copy, "tim sort");
 
 	// intro sort
-	memcpy(a, copy, ARRAYSIZE * sizeof(SORT_TYPE));
-	INTRO_SORT(a, ARRAYSIZE);
-	for (int i = 0; i < ARRAYSIZE; i++) {
-		printElement(a[i]);
-	}
-	puts("\n");
+	testSorting(INTRO_SORT, a, copy, "intro sort");
 
 	// dual-pivot quick sort
-	memcpy(a, copy, ARRAYSIZE * sizeof(SORT_TYPE));
-	DUAL_PIVOT_QUICK_SORT(a, ARRAYSIZE);
-	for (int i = 0; i < ARRAYSIZE; i++) {
-		printElement(a[i]);
-	}
-	puts("\n");
+	testSorting(DUAL_PIVOT_QUICK_SORT, a, copy, "dual-pivot quick sort");
+
+#if TYPE_CODE == 0
+	// radix sort
+	testSorting(RADIX_SORT, a, copy, "radix sort");
+#endif
 
 	system("pause");
 	return 0;
