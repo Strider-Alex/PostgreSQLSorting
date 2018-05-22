@@ -5,7 +5,7 @@
 /* TYPE CODE: 
  * 0 - int, 1 - char, 2 - string
  * BENCHMARK MODE:
- * 0 - count number of comparisons
+ * 0 - count number of comparisons, dont print array
  */
 #define TYPE_CODE 0
 #define BENCHMARK_MODE 0
@@ -45,8 +45,8 @@ int CMP_COUNT = 0; // number of comparisons
 
 #include "sort.h"
 
-#define ARRAYSIZE 100
-#define MAX_ELEMENT 1000
+#define ARRAYSIZE 1000
+#define MAX_ELEMENT 5000
 
 
 int cmp(const void *a, const void *b) {
@@ -89,7 +89,9 @@ void testSorting(void (*sort)(SORT_TYPE*,size_t), SORT_TYPE* a, SORT_TYPE* copy,
 	memcpy(a, copy, ARRAYSIZE * sizeof(SORT_TYPE));
 	CMP_COUNT = 0;
 	sort(a, ARRAYSIZE);
+#if BENCHMARK_MODE != 0
 	printElements(a, ARRAYSIZE);
+#endif
 #if BENCHMARK_MODE == 0
 	printf("#comparisons: %d", CMP_COUNT);
 #endif
@@ -98,7 +100,7 @@ void testSorting(void (*sort)(SORT_TYPE*,size_t), SORT_TYPE* a, SORT_TYPE* copy,
 
 int main() {
 	SORT_TYPE a[ARRAYSIZE], copy[ARRAYSIZE];
-	srand(0);
+	srand((unsigned)time(NULL));
 
 	initArray(a);
 
@@ -108,7 +110,9 @@ int main() {
 	puts("c standard quick sort:");
 	CMP_COUNT = 0;
 	qsort(a, ARRAYSIZE, sizeof(SORT_TYPE), cmp);
+#if BENCHMARK_MODE != 0
 	printElements(a, ARRAYSIZE);
+#endif
 #if BENCHMARK_MODE == 0
 	printf("#comparisons: %d", CMP_COUNT);
 #endif
