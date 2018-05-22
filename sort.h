@@ -1,6 +1,6 @@
 #pragma once
 /* Modified from Swenson's sort.h */
-/* Add intro_sort */
+/* Add intro_sort, dual-pivot quicksort and radix sort */
 
 
 /* Copyright (c) 2010-2017 Christopher Swenson. */
@@ -30,6 +30,10 @@
 
 #ifndef TIM_SORT_STACK_SIZE
 #define TIM_SORT_STACK_SIZE 128
+#endif
+
+#ifndef RADIX_SORT_BASE
+#define RADIX_SORT_BASE 10
 #endif
 
 #ifndef SORT_SWAP
@@ -152,6 +156,7 @@ static __inline size_t rbnd(size_t len) {
 #define QUICK_SORT                     SORT_MAKE_STR(quick_sort)
 #define INTRO_SORT                     SORT_MAKE_STR(intro_sort)
 #define DUAL_PIVOT_QUICK_SORT          SORT_MAKE_STR(dual_pivot_quick_sort)
+#define RADIX_SORT                     SORT_MAKE_STR(radix_sort)
 #define MERGE_SORT                     SORT_MAKE_STR(merge_sort)
 #define MERGE_SORT_IN_PLACE            SORT_MAKE_STR(merge_sort_in_place)
 #define MERGE_SORT_IN_PLACE_RMERGE     SORT_MAKE_STR(merge_sort_in_place_rmerge)
@@ -1086,6 +1091,48 @@ static void DUAL_PIVOT_QUICK_SORT_RECURSIVE(SORT_TYPE *dst, const size_t left, c
 void DUAL_PIVOT_QUICK_SORT(SORT_TYPE *dst, const size_t size) {
 
 	DUAL_PIVOT_QUICK_SORT_RECURSIVE(dst, 0U, size - 1U);
+}
+
+/*
+ * radix sort implementation, based on https://www.geeksforgeeks.org/radix-sort/
+ * this sorting algorithm only works on integer arrays
+*/
+void RADIX_SORT(int *dst, const size_t size) {
+	if (!size) {
+		return;
+	}
+	//find the maximal number to know number of digits
+	int m = dst[0];
+	for (size_t i = 1; i < size; i++) {
+		m = MAX(m, dst[i]);
+	}
+
+	int* output = malloc(sizeof(int)*size);
+	int count[RADIX_SORT_BASE];
+	for (int exp = 1; m / exp > 0; exp *= RADIX_SORT_BASE) {
+		memset(count, 0, RADIX_SORT_BASE *sizeof(int));
+		// store count of occurrences in count[]
+		for (size_t i = 0; i < size; i++) {
+			count[(dst[i] / exp) % RADIX_SORT_BASE]++;
+		}
+		// change count[i] so that count[i] now contains actual
+		// position of this digit in output[]
+		for (size_t i = 1; i < RADIX_SORT_BASE; i++) {
+			count[i] += count[i - 1];
+		}
+
+		// build the output array
+		for (int i = size - 1; i >= 0; i--){
+			output[count[(dst[i] / exp) % RADIX_SORT_BASE] - 1] = dst[i];
+			count[(dst[i] / exp) % RADIX_SORT_BASE]--;
+		}
+
+		// copy the output array to arr[], so that arr[] now
+		// contains sorted numbers according to current digit
+		memcpy(dst, output, size*sizeof(int));
+	}
+
+	free(output);
 }
 
 /* timsort implementation, based on timsort.txt */
