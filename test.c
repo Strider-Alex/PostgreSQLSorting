@@ -1,14 +1,17 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdlib.h>
+#include<time.h>
+#include "pg_qsort.h"
 
 /* TYPE CODE: 
  * 0 - int, 1 - char, 2 - string
  * BENCHMARK MODE:
- * 0 - count number of comparisons, dont print array
+ * 0 - count number of comparisons, dont print array, count CPU clks
+ * 1 - dont print array, count CPU clks
  */
-#define TYPE_CODE 0
-#define BENCHMARK_MODE 0
+#define TYPE_CODE 1
+#define BENCHMARK_MODE 1
 
 #if TYPE_CODE == 0
 #define SORT_NAME int
@@ -45,8 +48,8 @@ int CMP_COUNT = 0; // number of comparisons
 
 #include "sort.h"
 
-#define ARRAYSIZE 1000
-#define MAX_ELEMENT 5000
+#define ARRAYSIZE 2000000
+#define MAX_ELEMENT 5000000
 
 
 int cmp(const void *a, const void *b) {
@@ -85,11 +88,43 @@ void initArray(SORT_TYPE* a) {
 }
 
 void testSorting(void (*sort)(SORT_TYPE*,size_t), SORT_TYPE* a, SORT_TYPE* copy, char* name) {
+	clock_t start_t, end_t, total_t;
+	
 	printf("%s:\n", name);
 	memcpy(a, copy, ARRAYSIZE * sizeof(SORT_TYPE));
 	CMP_COUNT = 0;
+
+	start_t = clock();
 	sort(a, ARRAYSIZE);
-#if BENCHMARK_MODE != 0
+	end_t = clock();
+	total_t = (double)(end_t - start_t);
+	printf("CPU clks: %d\n", total_t);
+
+#if BENCHMARK_MODE > 1
+	printElements(a, ARRAYSIZE);
+#endif
+#if BENCHMARK_MODE == 0
+	printf("#comparisons: %d", CMP_COUNT);
+#endif
+
+	puts("\n");
+}
+
+void testSortingWithCompare(void(*sort)(SORT_TYPE*, size_t,
+	int(*)(const void*,const void*)), SORT_TYPE* a, SORT_TYPE* copy, char* name) {
+	clock_t start_t, end_t, total_t;
+	
+	printf("%s:\n", name);
+	memcpy(a, copy, ARRAYSIZE * sizeof(SORT_TYPE));
+	CMP_COUNT = 0;
+
+	start_t = clock();
+	sort(a, ARRAYSIZE,sizeof(SORT_TYPE),cmp);
+	end_t = clock();
+	total_t = (double)(end_t - start_t);
+	printf("CPU clks: %d\n", total_t);
+
+#if BENCHMARK_MODE > 1
 	printElements(a, ARRAYSIZE);
 #endif
 #if BENCHMARK_MODE == 0
@@ -107,16 +142,10 @@ int main() {
 	memcpy(copy, a, ARRAYSIZE * sizeof(SORT_TYPE));
 
 	// c standard quick sort
-	puts("c standard quick sort:");
-	CMP_COUNT = 0;
-	qsort(a, ARRAYSIZE, sizeof(SORT_TYPE), cmp);
-#if BENCHMARK_MODE != 0
-	printElements(a, ARRAYSIZE);
-#endif
-#if BENCHMARK_MODE == 0
-	printf("#comparisons: %d", CMP_COUNT);
-#endif
-	puts("\n");
+	testSortingWithCompare(qsort, a, copy, "c standard quick sort");
+
+	// pg quick sort
+	testSortingWithCompare(pg_qsort, a, copy, "pg qsort");
 
 	// wekipedia version quick sort
 	testSorting(QUICK_SORT,a,copy,"wekipedia version quick sort");
