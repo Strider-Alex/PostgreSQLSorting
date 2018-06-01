@@ -138,17 +138,7 @@ loop:SWAPINIT(a, es);
 				swap(pl, pl - es);
 		return;
 	}
-	presorted = 1;
-	for (pm = (char *)a + es; pm < (char *)a + n * es; pm += es)
-	{
-		if (cmp(pm - es, pm) > 0)
-		{
-			presorted = 0;
-			break;
-		}
-	}
-	if (presorted)
-		return;
+	
 	pm = (char *)a + (n / 2) * es;
 	if (n > 7)
 	{
