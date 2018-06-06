@@ -22,6 +22,12 @@ int(0), char(1), string(2), struct
 #define SORT_NAME int
 #endif
 
+#if TYPE_CODE == 2
+#define SORT_CMP(x, y) (strcmp((x).data,(y).data))
+#else
+#define SORT_CMP(x, y) (x - y)
+#endif
+
 #define MAX_ELEMENT 1000000000
 #define BIN_NUM 100
 

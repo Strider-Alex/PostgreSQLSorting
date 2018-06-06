@@ -4,8 +4,11 @@
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
+#include <sys/stat.h>
 
 #include "benchmark.h"
+#include "sort.h"
+#include "pg_qsort.h"
 /*
 Sorting Benchmark
 Array Patterns:
@@ -85,7 +88,7 @@ static void generateTestData(enum Pattern pattern, int size) {
 	char fname[30];
 	makeFileName(fname, pattern, size);
 	FILE *f = fopen(fname, "w");
-	if (f == NULL) {
+	if (!f) {
 		printf("Error writing to file: %s\n", fname);
 		exit(1);
 	}
@@ -131,10 +134,89 @@ static void generateTestData(enum Pattern pattern, int size) {
 
 /* read array data from disk */
 static void readTestData(int* a, enum Pattern pattern, int size) {
+	// open file
+	char fname[30];
+	makeFileName(fname, pattern, size);
+	FILE *f = fopen(fname, "r");
 
+	// read data
+	for (int i = 0; i < size; i++) {
+#if TYPE_CODE == 0
+		fscanf(f,"%d", &a[i]);
+#endif
+	}
+
+	//close file
+	fclose(f);
 }
 
+static int file_exist(char *filename)
+{
+	struct stat   buffer;
+	return (stat(filename, &buffer) == 0);
+}
+
+void postgre_qsort(SORT_TYPE* a, size_t size) {
+	pg_qsort(a, size, sizeof(SORT_TYPE), cmp);
+}
+
+void testSorting(void(*sort)(SORT_TYPE*, size_t), 
+	SORT_TYPE* a, SORT_TYPE* copy, int min, int max, int rounds, char* name) {
+	clock_t start_t, end_t, total_t;
+
+	printf("%s:\n", name);
+
+	for (enum Pattern p = SORTED; p <= MOSTLY_REVERSED; p++) {
+		for (int n = min; n <= max; n *= 10) {
+			char fname[30];
+			makeFileName(fname, p, n);
+			if (!file_exist(fname)) {
+				generateTestData(p, n);
+			}
+			readTestData(copy, p, n);
+			int ticksum = 0;
+			for (int r = 0; r < rounds; r++) {
+				memcpy(a, copy, n * sizeof(SORT_TYPE));
+				start_t = clock();
+				sort(a, n);
+				end_t = clock();
+				ticksum += end_t - start_t;
+			}
+			bool correct = true;
+			for (int i = 0; i < n - 1; i++) {
+				if (SORT_CMP(a[i], a[i + 1]) > 0) {
+					correct = false;
+					break;
+				}
+			}
+			printf("Pattern %d, n = %d, correct: %d, CPU clks: %lf\n", p, n, correct, 1.0*ticksum / rounds);
+		}
+	}
+	puts("\n");
+}
+
+
+
 void test() {
-	generateTestData(MOSTLY_SORTED, 1000000);
-	generateTestData(SORTED, 1000000);
+	int a[1000000], copy[1000000];
+
+	// wekipedia version quick sort
+	testSorting(QUICK_SORT, a, copy, 10000, 1000000, 100, "wekipedia version quick sort");
+
+	// postgresql qsort
+	testSorting(postgre_qsort, a, copy, 10000, 1000000, 100, "pg_qsort");
+
+	// tim sort
+	testSorting(TIM_SORT, a, copy, 10000, 1000000, 100, "tim sort");
+
+	// intro sort
+	testSorting(INTRO_SORT, a, copy, 10000, 1000000, 100, "intro sort");
+
+	// dual-pivot quick sort
+	testSorting(DUAL_PIVOT_QUICK_SORT, a, copy, 10000, 1000000, 100, "dual-pivot quick sort");
+
+#if TYPE_CODE == 0
+	// radix sort
+	testSorting(RADIX_SORT, a, copy, 10000, 1000000, 100, "radix sort");
+#endif
 }
