@@ -34,3 +34,5 @@ int(0), char(1), string(2), struct
 enum Pattern { SORTED, UNSORTED, REVERSED, MOSTLY_SORTED, MOSTLY_REVERSED };
 
 void test();
+void testSorting(void(*sort)(void*, size_t, size_t, int(*)(const void*, const void*)),
+	SORT_TYPE* a, SORT_TYPE* copy, int min, int max, int rounds, char* name);

@@ -7,8 +7,7 @@
 #include <sys/stat.h>
 
 #include "benchmark.h"
-#include "sort.h"
-#include "pg_qsort.h"
+#include "qsort.h"
 /*
 Sorting Benchmark
 Array Patterns:
@@ -156,11 +155,7 @@ static int file_exist(char *filename)
 	return (stat(filename, &buffer) == 0);
 }
 
-void postgre_qsort(SORT_TYPE* a, size_t size) {
-	pg_qsort(a, size, sizeof(SORT_TYPE), cmp);
-}
-
-void testSorting(void(*sort)(SORT_TYPE*, size_t), 
+void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*)),
 	SORT_TYPE* a, SORT_TYPE* copy, int min, int max, int rounds, char* name) {
 	clock_t start_t, end_t, total_t;
 
@@ -178,7 +173,7 @@ void testSorting(void(*sort)(SORT_TYPE*, size_t),
 			for (int r = 0; r < rounds; r++) {
 				memcpy(a, copy, n * sizeof(SORT_TYPE));
 				start_t = clock();
-				sort(a, n);
+				sort(a, n, sizeof(SORT_TYPE),cmp);
 				end_t = clock();
 				ticksum += end_t - start_t;
 			}
@@ -195,28 +190,18 @@ void testSorting(void(*sort)(SORT_TYPE*, size_t),
 	puts("\n");
 }
 
-
-
 void test() {
-	int a[1000000], copy[1000000];
+	int a[100000], copy[100000];
 
-	// wekipedia version quick sort
-	testSorting(QUICK_SORT, a, copy, 10000, 1000000, 100, "wekipedia version quick sort");
+	// new qsort
+	testSorting(quick_sort, a, copy, 10000, 100000, 100, "new quick sort");
 
-	// postgresql qsort
-	testSorting(postgre_qsort, a, copy, 10000, 1000000, 100, "pg_qsort");
+	// tim_sort
+	testSorting(tim_sort, a, copy, 10000, 100000, 100, "new tim sort");
 
-	// tim sort
-	testSorting(TIM_SORT, a, copy, 10000, 1000000, 100, "tim sort");
+	// new dual-pivot qsort
+	testSorting(dual_pivot_quick_sort, a, copy, 10000, 100000, 100, "new dual-pivot quick sort");
 
-	// intro sort
-	testSorting(INTRO_SORT, a, copy, 10000, 1000000, 100, "intro sort");
-
-	// dual-pivot quick sort
-	testSorting(DUAL_PIVOT_QUICK_SORT, a, copy, 10000, 1000000, 100, "dual-pivot quick sort");
-
-#if TYPE_CODE == 0
-	// radix sort
-	testSorting(RADIX_SORT, a, copy, 10000, 1000000, 100, "radix sort");
-#endif
+	// new dual-pivot qsort
+	testSorting(pg_qsort, a, copy, 10000, 100000, 100, "new pg_qsort");
 }
