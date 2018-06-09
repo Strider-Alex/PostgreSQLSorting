@@ -1,7 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <memory.h>
+#include <math.h>
 #include "qsort.h"
+
+#define min(X,Y) ((X) < (Y) ? (X) : (Y))
+#define max(X,Y) ((X) > (Y) ? (X) : (Y))
 
 typedef struct {
 	size_t alloc;
@@ -23,10 +28,11 @@ static __inline void assign(void* a, void* b,int es) {
 }
 
 static __inline void swap(void* a, void* b, int es) {
-    do{
-        char tmp = *((char*)a);
-        *((char*)a)++ = *((char*)b);
-        *((char*)b)++ = tmp;
+    char* pa = (char*)a,*pb = (char*)b;
+	do{
+		char tmp = *pa;
+        *pa++ = *pb;
+        *pb++ = tmp;
     } while (--es > 0);
 }
 
