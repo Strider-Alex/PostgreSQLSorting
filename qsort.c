@@ -523,8 +523,61 @@ void dual_pivot_quick_sort(void *a, const size_t size, const size_t es, int(*cmp
 	dual_pivot_quick_sort_recursive(a, 0U, size - 1U, es, cmp);
 }
 
-/* qsort used in postgreSQL */
-void pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *)){
+
+/*
+* Qsort routine based on J. L. Bentley and M. D. McIlroy,
+* "Engineering a sort function",
+* Software--Practice and Experience 23 (1993) 1249-1265.
+*
+* We have modified their original by adding a check for already-sorted input,
+* which seems to be a win per discussions on pgsql-hackers around 2006-03-21.
+*
+* Also, we recurse on the smaller partition and iterate on the larger one,
+* which ensures we cannot recurse more than log(N) levels (since the
+* partition recursed to is surely no more than half of the input).  Bentley
+* and McIlroy explicitly rejected doing this on the grounds that it's "not
+* worth the effort", but we have seen crashes in the field due to stack
+* overrun, so that judgment seems wrong.
+*/
+
+#define pgswapcode(TYPE, parmi, parmj, n) \
+do {		\
+	size_t i = (n) / sizeof (TYPE);			\
+	TYPE *pi = (TYPE *)(void *)(parmi);			\
+	TYPE *pj = (TYPE *)(void *)(parmj);			\
+	do {						\
+		TYPE	t = *pi;			\
+		*pi++ = *pj;				\
+		*pj++ = t;				\
+		} while (--i > 0);				\
+} while (0)
+
+#define pgswapinit(a, es) pgswaptype = ((char *)(a) - (char *)0) % sizeof(long) || \
+	(es) % sizeof(long) ? 2 : (es) == sizeof(long)? 0 : 1;
+
+static void
+pgswapfunc(char *a, char *b, size_t n, int pgswaptype)
+{
+	if (pgswaptype <= 1)
+		pgswapcode(long, a, b, n);
+	else
+		pgswapcode(char, a, b, n);
+}
+
+#define pgswap(a, b)						\
+	if (pgswaptype == 0) {					\
+		long t = *(long *)(void *)(a);			\
+		*(long *)(void *)(a) = *(long *)(void *)(b);	\
+		*(long *)(void *)(b) = t;			\
+	} else							\
+		pgswapfunc(a, b, es, pgswaptype)
+
+#define vecpgswap(a, b, n) if ((n) > 0) pgswapfunc(a, b, n, pgswaptype)
+
+
+void
+pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *))
+{
 	char	   *pa,
 		*pb,
 		*pc,
@@ -535,10 +588,10 @@ void pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void 
 	size_t		d1,
 		d2;
 	int			r,
-		swaptype,
+		pgswaptype,
 		presorted;
 
-loop:
+loop:pgswapinit(a, es);
 	if (n < 7)
 	{
 		for (pm = (char *)a + es; pm < (char *)a + n * es; pm += es)
@@ -594,9 +647,9 @@ loop:
 	}
 	pn = (char *)a + n * es;
 	d1 = min(pa - (char *)a, pb - pa);
-	swap((char*)a, pb - d1, d1*es);
+	vecpgswap((char*)a, pb - d1, d1);
 	d1 = min(pd - pc, pn - pd - es);
-	swap(pb, pn - d1, d1*es);
+	vecpgswap(pb, pn - d1, d1);
 	d1 = pb - pa;
 	d2 = pd - pc;
 	if (d1 <= d2)
@@ -627,6 +680,7 @@ loop:
 		}
 	}
 }
+
 
 
 
@@ -978,4 +1032,141 @@ void tim_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void
 	}
 }
 
+/* heap sort: based on wikipedia */
 
+static __inline void heap_shift_down(void *dst, const size_t start, const size_t end,
+	const size_t es, int(*cmp) (const void *, const void *)) {
+	size_t root = start;
+
+	while ((root << 1) <= end) {
+		size_t child = root << 1;
+
+		if ((child < end) && (cmp(pick(dst,child,es), pick(dst, child+1, es)) < 0)) {
+			child++;
+		}
+
+		if (cmp(pick(dst, root, es), pick(dst, child, es)) < 0) {
+			swap(pick(dst, root, es), pick(dst, child, es),es);
+			root = child;
+		}
+		else {
+			return;
+		}
+	}
+}
+
+static __inline void heapify(void *dst, const size_t size, const size_t es, int(*cmp) (const void *, const void *)) {
+	size_t start = size >> 1;
+
+	while (1) {
+		heap_shift_down(dst, start, size - 1,es,cmp);
+
+		if (start == 0) {
+			break;
+		}
+
+		start--;
+	}
+}
+
+void heap_sort(void *dst, const size_t size, const size_t es, int(*cmp) (const void *, const void *)) {
+	/* don't bother sorting an array of size <= 1 */
+	if (size <= 1) {
+		return;
+	}
+
+	size_t end = size - 1;
+	heapify(dst, size,es,cmp);
+
+	while (end > 0) {
+		swap(pick(dst,end,es), pick(dst,0,es),es);
+		heap_shift_down(dst, 0, end - 1,es,cmp);
+		end--;
+	}
+}
+
+/**
+* intro sort
+*/
+
+static void intro_sort_recursive(void *dst, const size_t left, const size_t right, size_t depth_limit,
+	const size_t es, int(*cmp) (const void *, const void *)) {
+	size_t pivot;
+	size_t new_pivot;
+
+	if (right <= left) {
+		return;
+	}
+
+	if ((right - left + 1U) < INSERTION_THRESHOLD) {
+		binary_insertion_sort(pick(dst, left, es), right - left + 1U, es, cmp);
+		return;
+	}
+
+	/* convert to heapsort when exceeding depth limit */
+	if (!depth_limit) {
+		heap_sort(pick(dst,left,es), right - left + 1,es,cmp);
+		return;
+	}
+
+	pivot = left + ((right - left) >> 1);
+	/* this seems to perform worse by a small amount... ? */
+	/* pivot = MEDIAN(dst, left, pivot, right); */
+	new_pivot = quick_sort_partition(dst, left, right, pivot,es,cmp);
+
+	/* check for partition all equal */
+	if (new_pivot == SIZE_MAX) {
+		return;
+	}
+
+	intro_sort_recursive(dst, left, new_pivot - 1U, depth_limit - 1,es,cmp);
+	intro_sort_recursive(dst, new_pivot + 1U, right, depth_limit - 1,es,cmp);
+}
+
+/* introsort implementation: set a depth limit to quicksort */
+void intro_sort(void *dst, const size_t size, const size_t es, int(*cmp) (const void *, const void *)) {
+
+	intro_sort_recursive(dst, 0U, size - 1U, 1.5 * log(size),es,cmp);
+}
+
+/*
+* radix sort implementation, based on https://www.geeksforgeeks.org/radix-sort/
+* this sorting algorithm only works on integer arrays
+*/
+void radix_sort(int *dst, const size_t size) {
+	if (!size) {
+		return;
+	}
+	//find the maximal number to know number of digits
+	int m = dst[0];
+	for (size_t i = 1; i < size; i++) {
+		m = max(m, dst[i]);
+	}
+
+	int* output = malloc(sizeof(int)*size);
+	int count[RADIX_SORT_BASE];
+	for (int exp = 1; m / exp > 0; exp *= RADIX_SORT_BASE) {
+		memset(count, 0, RADIX_SORT_BASE * sizeof(int));
+		// store count of occurrences in count[]
+		for (size_t i = 0; i < size; i++) {
+			count[(dst[i] / exp) % RADIX_SORT_BASE]++;
+		}
+		// change count[i] so that count[i] now contains actual
+		// position of this digit in output[]
+		for (size_t i = 1; i < RADIX_SORT_BASE; i++) {
+			count[i] += count[i - 1];
+		}
+
+		// build the output array
+		for (int i = size - 1; i >= 0; i--) {
+			output[count[(dst[i] / exp) % RADIX_SORT_BASE] - 1] = dst[i];
+			count[(dst[i] / exp) % RADIX_SORT_BASE]--;
+		}
+
+		// copy the output array to arr[], so that arr[] now
+		// contains sorted numbers according to current digit
+		memcpy(dst, output, size * sizeof(int));
+	}
+
+	free(output);
+}

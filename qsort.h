@@ -14,6 +14,10 @@
 #define RADIX_SORT_BASE 10
 #endif
 
+#ifndef RADIX_SORT_BASE
+#define RADIX_SORT_BASE 16
+#endif
+
 #ifndef CLZ
 #ifdef __GNUC__
 #define CLZ __builtin_clzll
@@ -73,3 +77,6 @@ void quick_sort(void *a, const size_t size, const size_t es, int(*cmp) (const vo
 void dual_pivot_quick_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
 void pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *));
 void tim_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
+void heap_sort(void *dst, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
+void intro_sort(void *dst, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
+void pg_intro_sort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *));

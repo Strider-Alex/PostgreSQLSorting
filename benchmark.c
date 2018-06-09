@@ -178,6 +178,11 @@ void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*
 				ticksum += end_t - start_t;
 			}
 			bool correct = true;
+#ifdef PRINTOUT
+			for (int i = 0; i < n - 1; i++) {
+				printf("%d ", a[i]);
+			}
+#endif
 			for (int i = 0; i < n - 1; i++) {
 				if (SORT_CMP(a[i], a[i + 1]) > 0) {
 					correct = false;
@@ -191,17 +196,23 @@ void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*
 }
 
 void test() {
-	int a[100000], copy[100000];
+	int a[MAX_N], copy[MAX_N];
+
+	// new pg qsort
+	testSorting(heap_sort, a, copy, MIN_N, MAX_N, 100, "new heap sort");
+
+	// new pg qsort
+	testSorting(pg_qsort, a, copy, MIN_N, MAX_N, 100, "new pg_qsort");
+
+	// intro sort
+	testSorting(intro_sort, a, copy, MIN_N, MAX_N, 100, "intro sort");
 
 	// new qsort
-	testSorting(quick_sort, a, copy, 10000, 100000, 100, "new quick sort");
+	testSorting(quick_sort, a, copy, MIN_N, MAX_N, 100, "new quick sort");
 
 	// tim_sort
-	testSorting(tim_sort, a, copy, 10000, 100000, 100, "new tim sort");
+	testSorting(tim_sort, a, copy, MIN_N, MAX_N, 100, "new tim sort");
 
 	// new dual-pivot qsort
-	testSorting(dual_pivot_quick_sort, a, copy, 10000, 100000, 100, "new dual-pivot quick sort");
-
-	// new dual-pivot qsort
-	testSorting(pg_qsort, a, copy, 10000, 100000, 100, "new pg_qsort");
+	testSorting(dual_pivot_quick_sort, a, copy, MIN_N, MAX_N, 100, "new dual-pivot quick sort");
 }
