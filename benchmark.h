@@ -30,7 +30,12 @@ int(0), char(1), string(2), struct
 
 #define MAX_ELEMENT 1000000000
 #define BIN_NUM 100
+#define MIN_N 1000
+#define MAX_N 1000000
+//#define PRINTOUT
 
 enum Pattern { SORTED, UNSORTED, REVERSED, MOSTLY_SORTED, MOSTLY_REVERSED };
 
 void test();
+void testSorting(void(*sort)(void*, size_t, size_t, int(*)(const void*, const void*)),
+	SORT_TYPE* a, SORT_TYPE* copy, int min, int max, int rounds, char* name);

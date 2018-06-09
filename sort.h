@@ -703,7 +703,7 @@ static __inline size_t MEDIAN(const SORT_TYPE *dst, const size_t a, const size_t
 	}
 	else {
 		/* b < a */
-		const int AC = SORT_CMP(dst[a], dst[b]) < 0;
+		const int AC = SORT_CMP(dst[a], dst[c]) < 0;
 
 		if (AC) {
 			/* b < a < c */
