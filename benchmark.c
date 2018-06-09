@@ -155,6 +155,12 @@ static int file_exist(char *filename)
 	return (stat(filename, &buffer) == 0);
 }
 
+#if TYPECODE==0
+void radix_sort_for_test(void* a, size_t size, size_t es, int(*cmp)(const void*, const void*)) {
+	radix_sort(a, size);
+}
+#endif
+
 void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*)),
 	SORT_TYPE* a, SORT_TYPE* copy, int min, int max, int rounds, char* name) {
 	clock_t start_t, end_t, total_t;
@@ -198,21 +204,21 @@ void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*
 void test() {
 	int a[MAX_N], copy[MAX_N];
 
-	// new pg qsort
-	testSorting(heap_sort, a, copy, MIN_N, MAX_N, 100, "new heap sort");
+	// radix sort
+	testSorting(radix_sort_for_test, a, copy, MIN_N, MAX_N, 100, "radix sort");
 
-	// new pg qsort
-	testSorting(pg_qsort, a, copy, MIN_N, MAX_N, 100, "new pg_qsort");
+	// pg qsort
+	testSorting(pg_qsort, a, copy, MIN_N, MAX_N, 100, "pg_qsort");
 
 	// intro sort
 	testSorting(intro_sort, a, copy, MIN_N, MAX_N, 100, "intro sort");
 
-	// new qsort
-	testSorting(quick_sort, a, copy, MIN_N, MAX_N, 100, "new quick sort");
+	// wekepedia qsort
+	testSorting(quick_sort, a, copy, MIN_N, MAX_N, 100, "wekepedia quick sort");
 
 	// tim_sort
-	testSorting(tim_sort, a, copy, MIN_N, MAX_N, 100, "new tim sort");
+	testSorting(tim_sort, a, copy, MIN_N, MAX_N, 100, "tim sort");
 
-	// new dual-pivot qsort
-	testSorting(dual_pivot_quick_sort, a, copy, MIN_N, MAX_N, 100, "new dual-pivot quick sort");
+	// dual-pivot qsort
+	testSorting(dual_pivot_quick_sort, a, copy, MIN_N, MAX_N, 100, "dual-pivot quick sort");
 }
