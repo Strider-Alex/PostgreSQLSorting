@@ -204,7 +204,9 @@ void test() {
 	int a[MAX_N], copy[MAX_N];
 
 	// radix sort
+#if TYPE_CODE == 0
 	testSorting(radix_sort_for_test, a, copy, MIN_N, MAX_N, 100, "radix sort");
+#endif
 
 	// pg qsort
 	testSorting(pg_qsort, a, copy, MIN_N, MAX_N, 100, "pg_qsort");
