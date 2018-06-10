@@ -18,14 +18,14 @@ int(0), char(1), string(2), struct
 /* compare functions, used for qsort */
 int cmp(const void *a, const void *b) {
 #if TYPE_CODE == 2
-	return strcmp((*((SORT_TYPE*)a)).data, (*((SORT_TYPE*)b)).data);
+	return strcmp((SORT_TYPE)a, (SORT_TYPE)b);
 #else
 	return *((SORT_TYPE*)a) - *((SORT_TYPE*)b);
 #endif
 }
 int cmp_reverse(const void *a, const void *b) {
 #if TYPE_CODE == 2
-	return strcmp((*((SORT_TYPE*)b)).data, (*((SORT_TYPE*)a)).data);
+	return strcmp((SORT_TYPE)b, (SORT_TYPE)a);
 #else
 	return *((SORT_TYPE*)b) - *((SORT_TYPE*)a);
 #endif
@@ -45,6 +45,20 @@ static int random_int(int max) {
 		num = (num << 16) + rand();
 	}
 	return num % max;
+}
+
+/* generate random string */
+static char *rand_string(char *str, size_t size){
+	const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	if (size) {
+		--size;
+		for (size_t n = 0; n < size; n++) {
+			int key = rand() % (int)(sizeof charset - 1);
+			str[n] = charset[key];
+		}
+		str[size] = '\0';
+	}
+	return str;
 }
 
 /* concat file name based on type, array pattern and size */
@@ -94,7 +108,9 @@ static void generateTestData(enum Pattern pattern, int size) {
 	//generate data
 	SORT_TYPE* a = (SORT_TYPE*)malloc(sizeof(SORT_TYPE)*size);
 	for (int i = 0; i < size; i++) {
-		a[i] = random_int(MAX_ELEMENT);
+#if TYPE_CODE == 0 || TYPE_CODE == 1
+		a[i] = random_int(MAX_INT);
+#endif
 	}
 
 	//deal with pattern
@@ -121,7 +137,7 @@ static void generateTestData(enum Pattern pattern, int size) {
 
 	/* write array to file */
 	for (int i = 0; i < size; i++) {
-#if TYPE_CODE == 0
+#if TYPE_CODE == 0 || TYPE_CODE == 1
 		fprintf(f, "%d ", a[i]);
 #endif
 	}
@@ -131,7 +147,7 @@ static void generateTestData(enum Pattern pattern, int size) {
 }
 
 /* read array data from disk */
-static void readTestData(int* a, enum Pattern pattern, int size) {
+static void readTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 	// open file
 	char fname[30];
 	makeFileName(fname, pattern, size);
@@ -139,7 +155,7 @@ static void readTestData(int* a, enum Pattern pattern, int size) {
 
 	// read data
 	for (int i = 0; i < size; i++) {
-#if TYPE_CODE == 0
+#if  TYPE_CODE == 0 || TYPE_CODE == 1
 		fscanf(f,"%d", &a[i]);
 #endif
 	}
@@ -154,7 +170,7 @@ static int file_exist(char *filename)
 	return (stat(filename, &buffer) == 0);
 }
 
-#if TYPECODE==0
+#if TYPE_CODE == 0 || TYPE_CODE == 1
 void radix_sort_for_test(void* a, size_t size, size_t es, int(*cmp)(const void*, const void*)) {
 	radix_sort(a, size);
 }
