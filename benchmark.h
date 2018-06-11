@@ -36,6 +36,7 @@ int(0), char(1), string(2), struct
 #endif
 
 #define MAX_INT 1000000000
+#define MAX_STR_LEN 20
 #define BIN_NUM 100
 #define MIN_N 1000
 #define MAX_N 1000000

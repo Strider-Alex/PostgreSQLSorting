@@ -18,14 +18,14 @@ int(0), char(1), string(2), struct
 /* compare functions, used for qsort */
 int cmp(const void *a, const void *b) {
 #if TYPE_CODE == 2
-	return strcmp((SORT_TYPE)a, (SORT_TYPE)b);
+	return strcmp(*((SORT_TYPE*)a), *((SORT_TYPE*)b));
 #else
 	return *((SORT_TYPE*)a) - *((SORT_TYPE*)b);
 #endif
 }
 int cmp_reverse(const void *a, const void *b) {
 #if TYPE_CODE == 2
-	return strcmp((SORT_TYPE)b, (SORT_TYPE)a);
+	return strcmp(*((SORT_TYPE*)b), *((SORT_TYPE*)a));
 #else
 	return *((SORT_TYPE*)b) - *((SORT_TYPE*)a);
 #endif
@@ -94,7 +94,7 @@ static void shuffleArray(SORT_TYPE* a, int size, int binLen) {
 }
 
 /* function to generate test data and write to disk */
-static void generateTestData(enum Pattern pattern, int size) {
+static void generateTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 
 	//open file to write
 	char fname[30];
@@ -106,10 +106,12 @@ static void generateTestData(enum Pattern pattern, int size) {
 	}
 
 	//generate data
-	SORT_TYPE* a = (SORT_TYPE*)malloc(sizeof(SORT_TYPE)*size);
 	for (int i = 0; i < size; i++) {
 #if TYPE_CODE == 0 || TYPE_CODE == 1
 		a[i] = random_int(MAX_INT);
+#elif TYPE_CODE == 2
+		a[i] = malloc(sizeof(char)*MAX_STR_LEN);
+		rand_string(a[i], MAX_STR_LEN);
 #endif
 	}
 
@@ -139,11 +141,15 @@ static void generateTestData(enum Pattern pattern, int size) {
 	for (int i = 0; i < size; i++) {
 #if TYPE_CODE == 0 || TYPE_CODE == 1
 		fprintf(f, "%d ", a[i]);
+#elif TYPE_CODE == 2
+		fprintf(f, "%s ", a[i]);
 #endif
 	}
 
 	/* close file */
 	fclose(f);
+	
+	return a;
 }
 
 /* read array data from disk */
@@ -157,6 +163,9 @@ static void readTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 	for (int i = 0; i < size; i++) {
 #if  TYPE_CODE == 0 || TYPE_CODE == 1
 		fscanf(f,"%d", &a[i]);
+#elif TYPE_CODE == 2
+		a[i] = malloc(sizeof(char)*MAX_STR_LEN);
+		fscanf(f, "%s", a[i]);
 #endif
 	}
 
@@ -187,9 +196,11 @@ void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*
 			char fname[30];
 			makeFileName(fname, p, n);
 			if (!file_exist(fname)) {
-				generateTestData(p, n);
+				generateTestData(copy, p, n);
 			}
-			readTestData(copy, p, n);
+			else {
+				readTestData(copy, p, n);
+			}
 			int ticksum = 0;
 			for (int r = 0; r < rounds; r++) {
 				memcpy(a, copy, n * sizeof(SORT_TYPE));
@@ -210,14 +221,23 @@ void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*
 					break;
 				}
 			}
+
 			printf("Pattern %d, n = %d, correct: %d, CPU clks: %lf\n", p, n, correct, 1.0*ticksum / rounds);
+
+#if TYPE_CODE == 2
+			// free strings
+			for (int i = 0; i < n; i++) {
+				free(copy[i]);
+			}
+#endif
 		}
 	}
 	puts("\n");
 }
 
 void test() {
-	int a[MAX_N], copy[MAX_N];
+	SORT_TYPE a[MAX_N];
+	SORT_TYPE copy[MAX_N];
 
 	// radix sort
 #if TYPE_CODE == 0
