@@ -20,15 +20,23 @@ int(0), char(1), string(2), struct
 #if TYPE_CODE == 0
 #define SORT_TYPE int
 #define SORT_NAME int
+#elif TYPE_CODE == 1
+#define SORT_TYPE char
+#define SORT_NAME char
+#elif TYPE_CODE == 2
+#define SORT_TYPE char*
+#define SORT_NAME string
 #endif
 
+
 #if TYPE_CODE == 2
-#define SORT_CMP(x, y) (strcmp((x).data,(y).data))
+#define SORT_CMP(x, y) (strcmp(x,y))
 #else
 #define SORT_CMP(x, y) (x - y)
 #endif
 
-#define MAX_ELEMENT 1000000000
+#define MAX_INT 1000000000
+#define MAX_STR_LEN 20
 #define BIN_NUM 100
 #define MIN_N 1000
 #define MAX_N 1000000
