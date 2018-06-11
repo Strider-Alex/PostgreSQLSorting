@@ -1,5 +1,5 @@
 CC=gcc
-CCFLAGS=-g
+CCFLAGS=-Wall
 LDFLAGS=-lm
 SOURCES=$(wildcard *.c)
 OBJECTS=$(SOURCES:.c=.o)
@@ -18,3 +18,6 @@ $(TARGET): $(OBJECTS)
 
 clean:
 	rm -f *.o $(TARGET)
+
+clean_test:
+	rm -f *.txt

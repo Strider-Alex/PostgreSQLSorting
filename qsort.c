@@ -594,8 +594,7 @@ pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *))
 	size_t		d1,
 		d2;
 	int			r,
-		pgswaptype,
-		presorted;
+		pgswaptype;
 
 loop:pgswapinit(a, es);
 	if (n < 7)

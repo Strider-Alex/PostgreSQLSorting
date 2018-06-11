@@ -148,8 +148,6 @@ static void generateTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 
 	/* close file */
 	fclose(f);
-	
-	return a;
 }
 
 /* read array data from disk */
@@ -187,7 +185,7 @@ void radix_sort_for_test(void* a, size_t size, size_t es, int(*cmp)(const void*,
 
 void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*)),
 	SORT_TYPE* a, SORT_TYPE* copy, int min, int max, int rounds, char* name) {
-	clock_t start_t, end_t, total_t;
+	clock_t start_t, end_t;
 
 	printf("%s:\n", name);
 
