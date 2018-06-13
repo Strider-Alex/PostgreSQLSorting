@@ -581,9 +581,7 @@ pgswapfunc(char *a, char *b, size_t n, int pgswaptype)
 #define vecpgswap(a, b, n) if ((n) > 0) pgswapfunc(a, b, n, pgswaptype)
 
 
-void
-pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *))
-{
+void pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *)){
 	char	   *pa,
 		*pb,
 		*pc,
@@ -1132,6 +1130,162 @@ static void intro_sort_recursive(void *dst, const size_t left, const size_t righ
 void intro_sort(void *dst, const size_t size, const size_t es, int(*cmp) (const void *, const void *)) {
 
 	intro_sort_recursive(dst, 0U, size - 1U, 1.5 * log(size),es,cmp);
+}
+
+/**
+* linux heap sort
+*/
+void linux_heap_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *))
+{
+	/* pre-scale counters for performance */
+	int i = (size / 2 - 1) * es, n = size * es, c, r;
+
+	/* heapify */
+	for (; i >= 0; i -= es) {
+		for (r = i; r * 2 + es < n; r = c) {
+			c = r * 2 + es;
+			if (c < n - es &&
+				cmp((char*)a + c, (char*)a + c + es) < 0)
+				c += es;
+			if (cmp((char*)a + r, (char*)a + c) >= 0)
+				break;
+			swap((char*)a + r, (char*)a + c, es);
+		}
+	}
+
+	/* sort */
+	for (i = n - es; i > 0; i -= es) {
+		swap((char*)a, (char*)a + i, es);
+		for (r = 0; r * 2 + es < i; r = c) {
+			c = r * 2 + es;
+			if (c < i - es &&
+				cmp((char*)a + c, (char*)a + c + es) < 0)
+				c += es;
+			if (cmp((char*)a + r, (char*)a + c) >= 0)
+				break;
+			swap((char*)a + r, (char*)a + c, es);
+		}
+	}
+}
+
+/*
+* pg intro sort
+*/
+static void pg_intro_sort_recursive(void *a, size_t n, size_t depth, size_t es, int(*cmp) (const void *, const void *)) {
+	char	   *pa,
+		*pb,
+		*pc,
+		*pd,
+		*pl,
+		*pm,
+		*pn;
+	size_t		d1,
+		d2;
+	int			r,
+		pgswaptype,
+		presorted;
+
+loop:pgswapinit(a, es);
+	if (n < 7)
+	{
+		for (pm = (char *)a + es; pm < (char *)a + n * es; pm += es)
+			for (pl = pm; pl >(char *) a && cmp(pl - es, pl) > 0;
+				pl -= es)
+				swap(pl, pl - es, es);
+		return;
+	}
+
+	if (!depth) {
+		heap_sort(a, n, es, cmp);
+		return;
+	}
+
+	pm = (char *)a + (n / 2) * es;
+	if (n > 7)
+	{
+		pl = (char *)a;
+		pn = (char *)a + (n - 1) * es;
+		if (n > 40)
+		{
+			size_t		d = (n / 8) * es;
+
+			pl = med3(pl, pl + d, pl + 2 * d, cmp);
+			pm = med3(pm - d, pm, pm + d, cmp);
+			pn = med3(pn - 2 * d, pn - d, pn, cmp);
+		}
+		pm = med3(pl, pm, pn, cmp);
+	}
+	swap((char*)a, pm, es);
+	pa = pb = (char *)a + es;
+	pc = pd = (char *)a + (n - 1) * es;
+	for (;;)
+	{
+		while (pb <= pc && (r = cmp(pb, a)) <= 0)
+		{
+			if (r == 0)
+			{
+				swap(pa, pb, es);
+				pa += es;
+			}
+			pb += es;
+		}
+		while (pb <= pc && (r = cmp(pc, a)) >= 0)
+		{
+			if (r == 0)
+			{
+				swap(pc, pd, es);
+				pd -= es;
+			}
+			pc -= es;
+		}
+		if (pb > pc)
+			break;
+		swap(pb, pc, es);
+		pb += es;
+		pc -= es;
+	}
+	pn = (char *)a + n * es;
+	d1 = min(pa - (char *)a, pb - pa);
+	vecpgswap((char*)a, pb - d1, d1);
+	d1 = min(pd - pc, pn - pd - es);
+	vecpgswap(pb, pn - d1, d1);
+	d1 = pb - pa;
+	d2 = pd - pc;
+	if (d1 <= d2)
+	{
+		/* Recurse on left partition, then iterate on right partition */
+		if (d1 > es)
+			pg_intro_sort_recursive(a, d1 / es, depth - 1, es, cmp);
+		if (d2 > es)
+		{
+			/* Iterate rather than recurse to save stack space */
+			/* pg_intro_sort_recursive(pn - d2, d2 / es, depth - 1, es, cmp); */
+			a = pn - d2;
+			n = d2 / es;
+			depth--;
+			goto loop;
+		}
+	}
+	else
+	{
+		/* Recurse on right partition, then iterate on left partition */
+		if (d2 > es)
+			pg_intro_sort_recursive(pn - d2, d2 / es, depth - 1, es, cmp);
+		if (d1 > es)
+		{
+			/* Iterate rather than recurse to save stack space */
+			/* pg_intro_sort_recursive(a, d1 / es, depth - 1, es, cmp); */
+			n = d1 / es;
+			depth--;
+			goto loop;
+		}
+	}
+}
+
+/* introsort implemented based on pg_qsort */
+void pg_intro_sort(void *dst, const size_t size, const size_t es, int(*cmp) (const void *, const void *)) {
+
+	pg_intro_sort_recursive(dst, size, 1.5 * log(size), es, cmp);
 }
 
 /*

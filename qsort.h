@@ -73,6 +73,8 @@ static int clzll(uint64_t x) {
 #endif
 #endif
 
+void heap_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
+void linux_heap_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
 void quick_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
 void dual_pivot_quick_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
 void pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *));
