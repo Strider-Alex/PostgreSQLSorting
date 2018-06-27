@@ -237,32 +237,32 @@ void test() {
 	SORT_TYPE a[MAX_N];
 	SORT_TYPE copy[MAX_N];
 
+	// pg intro sort
+	testSorting(pg_intro_sort, a, copy, MIN_N, MAX_N, REPEAT, "pg intro sort");
+
+	// pg qsort
+	testSorting(pg_qsort, a, copy, MIN_N, MAX_N, REPEAT, "pg_qsort");
+
 	// heap sort
-	testSorting(heap_sort, a, copy, MIN_N, MAX_N, 100, "heap sort");
+	testSorting(heap_sort, a, copy, MIN_N, MAX_N, REPEAT, "heap sort");
 
 	// linux heap sort
-	testSorting(linux_heap_sort, a, copy, MIN_N, MAX_N, 100, "linux heap sort");
+	testSorting(linux_heap_sort, a, copy, MIN_N, MAX_N, REPEAT, "linux heap sort");
 
 	// radix sort
 #if TYPE_CODE == 0
-	testSorting(radix_sort_for_test, a, copy, MIN_N, MAX_N, 100, "radix sort");
+	testSorting(radix_sort_for_test, a, copy, MIN_N, MAX_N, REPEAT, "radix sort");
 #endif
 
-	// pg intro sort
-	testSorting(pg_intro_sort, a, copy, MIN_N, MAX_N, 100, "pg intro sort");
-
-	// pg qsort
-	testSorting(pg_qsort, a, copy, MIN_N, MAX_N, 100, "pg_qsort");
-
 	// intro sort
-	testSorting(intro_sort, a, copy, MIN_N, MAX_N, 100, "intro sort");
+	testSorting(intro_sort, a, copy, MIN_N, MAX_N, REPEAT, "intro sort");
 
 	// wekepedia qsort
-	testSorting(quick_sort, a, copy, MIN_N, MAX_N, 100, "wekepedia quick sort");
+	testSorting(quick_sort, a, copy, MIN_N, MAX_N, REPEAT, "wekepedia quick sort");
 
 	// tim_sort
-	testSorting(tim_sort, a, copy, MIN_N, MAX_N, 100, "tim sort");
+	testSorting(tim_sort, a, copy, MIN_N, MAX_N, REPEAT, "tim sort");
 
 	// dual-pivot qsort
-	testSorting(dual_pivot_quick_sort, a, copy, MIN_N, MAX_N, 100, "dual-pivot quick sort");
+	testSorting(dual_pivot_quick_sort, a, copy, MIN_N, MAX_N, REPEAT, "dual-pivot quick sort");
 }

@@ -40,6 +40,7 @@ int(0), char(1), string(2), struct
 #define BIN_NUM 100
 #define MIN_N 1000
 #define MAX_N 1000000
+#define REPEAT 100
 //#define PRINTOUT
 
 enum Pattern { SORTED, UNSORTED, REVERSED, MOSTLY_SORTED, MOSTLY_REVERSED };
