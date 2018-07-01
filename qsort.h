@@ -83,3 +83,4 @@ void heap_sort(void *dst, const size_t size, const size_t es, int(*cmp) (const v
 void intro_sort(void *dst, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
 void radix_sort(int *dst, const size_t size);
 void pg_intro_sort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *));
+void old_pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *));
