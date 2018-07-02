@@ -193,6 +193,7 @@ loop:
 	// convert to heap sort if exceed depth limit
 	if (!depth) {
 		heap_sort(a, n, swaptype, es, cmp);
+		return;
 	}
 
 	pm = (char *)a + (n / 2) * es;
