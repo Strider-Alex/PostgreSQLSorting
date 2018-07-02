@@ -48,6 +48,7 @@
 #include <math.h>
 #include <stdlib.h>
 
+#define Min(X,Y) ((X) < (Y) ? (X) : (Y))
 
 static char *med3(char *a, char *b, char *c,
 	int(*cmp) (const void *, const void *));
@@ -240,9 +241,9 @@ loop:
 		pc -= es;
 	}
 	pn = (char *)a + n * es;
-	d1 = min(pa - (char *)a, pb - pa);
+	d1 = Min(pa - (char *)a, pb - pa);
 	vecswap(a, pb - d1, d1);
-	d1 = min(pd - pc, pn - pd - es);
+	d1 = Min(pd - pc, pn - pd - es);
 	vecswap(pb, pn - d1, d1);
 	d1 = pb - pa;
 	d2 = pd - pc;
@@ -386,9 +387,9 @@ loop:SWAPINIT(a, es);
 		pc -= es;
 	}
 	pn = (char *)a + n * es;
-	d1 = min(pa - (char *)a, pb - pa);
+	d1 = Min(pa - (char *)a, pb - pa);
 	vecswap(a, pb - d1, d1);
-	d1 = min(pd - pc, pn - pd - es);
+	d1 = Min(pd - pc, pn - pd - es);
 	vecswap(pb, pn - d1, d1);
 	d1 = pb - pa;
 	d2 = pd - pc;
