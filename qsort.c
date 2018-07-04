@@ -119,8 +119,8 @@ heap_shift_down(void *a, const size_t start, const size_t end,
 	int swaptype, const size_t es, int(*cmp) (const void *, const void *)) {
 	size_t root = start;
 
-	while ((root << 1) <= end) {
-		size_t child = root << 1;
+	while ((root << 1) + 1 <= end) {
+		size_t child = (root << 1) + 1;
 
 		if ((child < end) && cmp((char*)a + child * es, (char*)a + (child + 1)*es) < 0) {
 			child++;
@@ -148,9 +148,9 @@ heap_sort(void *a, const size_t size, int swaptype, const size_t es, int(*cmp) (
 	end = size - 1;
 
 	/* heapify */
-	start = size >> 1;
+	start = (end - 1) >> 1;
 	while (1) {
-		heap_shift_down(a, start, size - 1, swaptype, es, cmp);
+		heap_shift_down(a, start, end, swaptype, es, cmp);
 
 		if (start == 0) {
 			break;
