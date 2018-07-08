@@ -398,11 +398,11 @@ loop:SWAPINIT(a, es);
 	{
 		/* Recurse on left partition, then iterate on right partition */
 		if (d1 > es)
-			pg_qsort(a, d1 / es, es, cmp);
+			old_pg_qsort(a, d1 / es, es, cmp);
 		if (d2 > es)
 		{
 			/* Iterate rather than recurse to save stack space */
-			/* pg_qsort(pn - d2, d2 / es, es, cmp); */
+			/* old_pg_qsort(pn - d2, d2 / es, es, cmp); */
 			a = pn - d2;
 			n = d2 / es;
 			goto loop;
@@ -412,11 +412,11 @@ loop:SWAPINIT(a, es);
 	{
 		/* Recurse on right partition, then iterate on left partition */
 		if (d2 > es)
-			pg_qsort(pn - d2, d2 / es, es, cmp);
+			old_pg_qsort(pn - d2, d2 / es, es, cmp);
 		if (d1 > es)
 		{
 			/* Iterate rather than recurse to save stack space */
-			/* pg_qsort(a, d1 / es, es, cmp); */
+			/* old_pg_qsort(a, d1 / es, es, cmp); */
 			n = d1 / es;
 			goto loop;
 		}
