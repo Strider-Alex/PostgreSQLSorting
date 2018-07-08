@@ -10,7 +10,7 @@
 /*
 Sorting Benchmark
 Array Patterns:
-sorted, unsorted(random), mostly sorted, reversed, mostly reversed
+sorted, unsorted(random), mostly sorted, reversed, mostly reversed, killer
 Data Type:
 int(0), char(1), string(2), struct
 */
@@ -93,6 +93,168 @@ static void shuffleArray(SORT_TYPE* a, int size, int binLen) {
 	free(tmp);
 }
 
+/* generate qsort killer sequence using a sorted array */
+struct SORT_TYPE_WITH_POS {
+	SORT_TYPE val;
+	int pos;
+};
+
+typedef struct SORT_TYPE_WITH_POS SORT_POS;
+
+/* swap function for SORT_POS */
+void swapPos(SORT_POS* a, SORT_POS* b) {
+	SORT_POS c = *b;
+	*b = *a;
+	*a = c;
+	return;
+}
+void swapPosVec(SORT_POS* a, SORT_POS* b, int n) {
+	for (int i = 0; i < n; i++) {
+		SORT_POS c = *(b + i);
+		*(b + i) = *(a + i);
+		*(a + i) = c;
+	}
+	return;
+}
+
+static int safeSet(SORT_POS* a, int i, SORT_TYPE val) {
+	if (a[i].val == MAX_INT) {
+		a[i].val = val;
+		return 1;
+	}
+	return 0;
+}
+static void generate_killer_recursive(SORT_POS *a, SORT_TYPE* sorted, size_t n, int* pmin, int* pmax)
+{
+	SORT_POS	   *pa,
+		*pb,
+		*pc,
+		*pd,
+		*pl,
+		*pm,
+		*pn;
+	size_t		d1,
+		d2;
+	int			r;
+
+loop:
+	if (n < 7)
+	{
+		for (int i = 0; i < n; i++) {
+			if (safeSet(a, i, sorted[*pmax])) {
+				*pmax -= 1;
+			}	
+		}
+		return;
+	}
+	pm = a + (n / 2);
+	if (n > 7)
+	{
+		pl = a;
+		pn = a + (n - 1);
+		if (n > 40)
+		{
+			size_t d = (n / 8);
+			int indexes[] = { 0,d,2 * d,pm - a - d,pm - a,pm - a + d,pn - a - 2 * d,pn - a - d,pn - a };
+			for (int i = 0; i < 9; i++) {
+				if (safeSet(a, indexes[i], sorted[*pmin])) {
+					*pmin += 1;
+				}
+			}
+		}
+		else {
+			int indexes[] = { 0,pm - a,pn - a };
+			for (int i = 0; i < 3; i++) {
+				if (safeSet(a, indexes[i], sorted[*pmin])) {
+					*pmin += 1;
+				}
+			}
+		}
+	}
+	swapPos(a, pm);
+	pa = pb = a + 1;
+	pc = pd = a + (n - 1);
+	for (;;)
+	{
+		while (pb <= pc && (r = cmp(pb, a)) <= 0)
+		{
+			if (r == 0)
+			{
+				swapPos(pa, pb);
+				pa ++;
+			}
+			pb ++;
+		}
+		while (pb <= pc && (r = cmp(pc, a)) >= 0)
+		{
+			if (r == 0)
+			{
+				swapPos(pc, pd);
+				pd --;
+			}
+			pc --;
+		}
+		if (pb > pc)
+			break;
+		swapPos(pb, pc);
+		pb ++;
+		pc --;
+	}
+	pn = a + n;
+	d1 = min(pa - a, pb - pa);
+	swapPosVec(a, pb - d1, d1);
+	d1 = min(pd - pc, pn - pd - 1);
+	swapPosVec(pb, pn - d1, d1);
+	d1 = pb - pa;
+	d2 = pd - pc;
+	if (d1 <= d2)
+	{
+		/* Recurse on left partition, then iterate on right partition */
+		if (d1 > 1)
+			generate_killer_recursive(a, sorted, d1, pmin, pmax);
+		if (d2 > 1)
+		{
+			a = pn - d2;
+			n = d2;
+			goto loop;
+		}
+	}
+	else
+	{
+		/* Recurse on right partition, then iterate on left partition */
+		if (d2 > 1)
+			generate_killer_recursive(pn - d2, sorted, d2, pmin, pmax);
+		if (d1 > 1)
+		{
+			n = d1;
+			goto loop;
+		}
+	}
+}
+
+static void generateMedKiller(SORT_TYPE* a,  int size) {
+	int imin = 0, imax = size - 1;
+	SORT_POS* tmp = (SORT_POS*)malloc(sizeof(SORT_POS)*size);
+	for (int i = 0; i < size; i++) {
+		tmp[i].pos = i;
+		tmp[i].val = MAX_INT;
+	}
+	generate_killer_recursive(tmp, a, size, &imin, &imax);
+	for (int i = 0; i < size; i++) {
+		if (imax <= imin) {
+			break;
+		}
+		if (safeSet(tmp, i, a[imax])) {
+			imax -= 1;
+		}
+	}
+	for (int i = 0; i < size; i++) {
+		a[tmp[i].pos] = tmp[i].val;
+	}
+	free(tmp);
+	return;
+}
+
 /* function to generate test data and write to disk */
 static void generateTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 
@@ -132,6 +294,10 @@ static void generateTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 	case MOSTLY_REVERSED:
 		qsort(a, size, sizeof(SORT_TYPE), cmp_reverse);
 		shuffleArray(a, size, size / BIN_NUM);
+		break;
+	case KILLER:
+		qsort(a, size, sizeof(SORT_TYPE), cmp);
+		generateMedKiller(a, size);
 		break;
 	default:
 		break;
@@ -183,7 +349,7 @@ void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*
 
 	printf("%s:\n", name);
 
-	for (enum Pattern p = SORTED; p <= MOSTLY_REVERSED; p++) {
+	for (enum Pattern p = SORTED; p <= KILLER; p++) {
 		for (int n = min; n <= max; n *= 10) {
 			char fname[30];
 			makeFileName(fname, p, n);
