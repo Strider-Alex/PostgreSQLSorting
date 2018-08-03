@@ -18,14 +18,20 @@ int(0), char(1), string(2), struct
 #endif
 
 #if TYPE_CODE == 0
+//high cardinality int
 #define SORT_TYPE int
-#define SORT_NAME int
+#define MAX_INT 10000000
+#define INT_GEN
 #elif TYPE_CODE == 1
+//characters
 #define SORT_TYPE char
-#define SORT_NAME char
+#define MAX_INT 256
+#define INT_GEN
 #elif TYPE_CODE == 2
+//high cardinality string
 #define SORT_TYPE char*
-#define SORT_NAME string
+#define STR_GEN
+#define MAX_STR_LEN 20
 #endif
 
 
@@ -35,8 +41,6 @@ int(0), char(1), string(2), struct
 #define SORT_CMP(x, y) (x - y)
 #endif
 
-#define MAX_INT 10000000
-#define MAX_STR_LEN 20
 #define BIN_NUM 100
 #define MIN_N 10000
 #define MAX_N 10000000

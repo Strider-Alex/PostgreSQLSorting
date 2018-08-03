@@ -17,14 +17,14 @@ int(0), char(1), string(2), struct
 
 /* compare functions, used for qsort */
 int cmp(const void *a, const void *b) {
-#if TYPE_CODE == 2
+#ifdef STR_GEN
 	return strcmp(*((SORT_TYPE*)a), *((SORT_TYPE*)b));
 #else
 	return *((SORT_TYPE*)a) - *((SORT_TYPE*)b);
 #endif
 }
 int cmp_reverse(const void *a, const void *b) {
-#if TYPE_CODE == 2
+#ifdef STR_GEN
 	return strcmp(*((SORT_TYPE*)b), *((SORT_TYPE*)a));
 #else
 	return *((SORT_TYPE*)b) - *((SORT_TYPE*)a);
@@ -58,6 +58,14 @@ static char *rand_string(char *str, size_t size){
 		}
 		str[size] = '\0';
 	}
+	return str;
+}
+
+static char *get_max_str(char *str, size_t size) {
+	for (int i = 0; i < size; i++) {
+		str[i] = 'z' + 1;
+	}
+	str[size] = '\0';
 	return str;
 }
 
@@ -117,8 +125,17 @@ void swapPosVec(SORT_POS* a, SORT_POS* b, int n) {
 	return;
 }
 
+static SORT_TYPE upperBound() {
+#ifdef INT_GEN
+	return MAX_INT;
+#elif defined STR_GEN
+	static char str[MAX_STR_LEN + 1];
+	return get_max_str(str, MAX_STR_LEN);
+#endif
+}
+
 static int safeSet(SORT_POS* a, int i, SORT_TYPE val) {
-	if (a[i].val == MAX_INT) {
+	if (a[i].val == upperBound()) {
 		a[i].val = val;
 		return 1;
 	}
@@ -237,7 +254,7 @@ static void generateMedKiller(SORT_TYPE* a,  int size) {
 	SORT_POS* tmp = (SORT_POS*)malloc(sizeof(SORT_POS)*size);
 	for (int i = 0; i < size; i++) {
 		tmp[i].pos = i;
-		tmp[i].val = MAX_INT;
+		tmp[i].val = upperBound();
 	}
 	generate_killer_recursive(tmp, a, size, &imin, &imax);
 	for (int i = 0; i < size; i++) {
@@ -269,9 +286,9 @@ static void generateTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 
 	//generate data
 	for (int i = 0; i < size; i++) {
-#if TYPE_CODE == 0 || TYPE_CODE == 1
+#ifdef INT_GEN
 		a[i] = random_int(MAX_INT);
-#elif TYPE_CODE == 2
+#elif defined STR_GEN
 		a[i] = malloc(sizeof(char)*MAX_STR_LEN);
 		rand_string(a[i], MAX_STR_LEN);
 #endif
@@ -305,9 +322,9 @@ static void generateTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 
 	/* write array to file */
 	for (int i = 0; i < size; i++) {
-#if TYPE_CODE == 0 || TYPE_CODE == 1
+#ifdef INT_GEN
 		fprintf(f, "%d ", a[i]);
-#elif TYPE_CODE == 2
+#elif defined STR_GEN
 		fprintf(f, "%s ", a[i]);
 #endif
 	}
@@ -325,9 +342,9 @@ static void readTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 
 	// read data
 	for (int i = 0; i < size; i++) {
-#if  TYPE_CODE == 0 || TYPE_CODE == 1
+#ifdef INT_GEN
 		fscanf(f,"%d", &a[i]);
-#elif TYPE_CODE == 2
+#elif defined STR_GEN
 		a[i] = malloc(sizeof(char)*MAX_STR_LEN);
 		fscanf(f, "%s", a[i]);
 #endif
@@ -380,7 +397,7 @@ void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*
 
 			printf("%s,%d,%d,%d,%.3lf\n", name, p, n, correct, 1.0*ticksum / rounds);
 
-#if TYPE_CODE == 2
+#ifdef STR_GEN
 			// free strings
 			for (int i = 0; i < n; i++) {
 				free(copy[i]);
