@@ -65,7 +65,7 @@ static int clzll(uint64_t x) {
 	if (x <= 0x7FFFFFFFFFFFFFFFL) {
 		n = n + 1;
 	}
-
+	;
 	return n;
 }
 
@@ -73,14 +73,12 @@ static int clzll(uint64_t x) {
 #endif
 #endif
 
-void heap_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
-void linux_heap_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
+void heap_sort_wrapper(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
 void quick_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
 void dual_pivot_quick_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
 void pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *));
 void tim_sort(void *a, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
-void heap_sort(void *dst, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
-void intro_sort(void *dst, const size_t size, const size_t es, int(*cmp) (const void *, const void *));
 void radix_sort(int *dst, const size_t size);
-void pg_intro_sort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *));
 void old_pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *));
+void rand_pg_qsort(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *));
+void pg_qsort_once(void *a, size_t n, size_t es, int(*cmp) (const void *, const void *));

@@ -35,15 +35,15 @@ int(0), char(1), string(2), struct
 #define SORT_CMP(x, y) (x - y)
 #endif
 
-#define MAX_INT 1000000000
+#define MAX_INT 10000000
 #define MAX_STR_LEN 20
 #define BIN_NUM 100
-#define MIN_N 1000000
-#define MAX_N 1000000
-#define REPEAT 10
+#define MIN_N 10000
+#define MAX_N 10000000
+#define REPEAT 5
 //#define PRINTOUT
 
-enum Pattern { SORTED, UNSORTED, REVERSED, MOSTLY_SORTED, MOSTLY_REVERSED };
+enum Pattern { SORTED, UNSORTED, REVERSED, MOSTLY_SORTED, MOSTLY_REVERSED, KILLER };
 
 void test();
 void testSorting(void(*sort)(void*, size_t, size_t, int(*)(const void*, const void*)),

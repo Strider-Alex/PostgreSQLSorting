@@ -347,8 +347,6 @@ void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*
 	SORT_TYPE* a, SORT_TYPE* copy, int min, int max, int rounds, char* name) {
 	clock_t start_t, end_t;
 
-	printf("%s:\n", name);
-
 	for (enum Pattern p = SORTED; p <= KILLER; p++) {
 		for (int n = min; n <= max; n *= 10) {
 			char fname[30];
@@ -380,7 +378,7 @@ void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*
 				}
 			}
 
-			printf("Pattern %d, n = %d, correct: %d, CPU clks: %lf\n", p, n, correct, 1.0*ticksum / rounds);
+			printf("%s,%d,%d,%d,%.3lf\n", name, p, n, correct, 1.0*ticksum / rounds);
 
 #if TYPE_CODE == 2
 			// free strings
@@ -390,15 +388,34 @@ void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*
 #endif
 		}
 	}
-	puts("\n");
 }
 
 void test() {
 	SORT_TYPE a[MAX_N];
 	SORT_TYPE copy[MAX_N];
 
+	printf("sorting routine,pattern,n,correct,time(CPU clock ticks)\n");
+
+	testSorting(heap_sort_wrapper, a, copy, MIN_N, MAX_N, REPEAT, "heap sort");
+
+	testSorting(tim_sort, a, copy, MIN_N, MAX_N, REPEAT, "tim sort");
+
+	testSorting(dual_pivot_quick_sort, a, copy, MIN_N, MAX_N, REPEAT, "dual pivot quick sort");
+
+	testSorting(quick_sort, a, copy, MIN_N, MAX_N, REPEAT, "median of 3 quick sort");
+
+#if TYPECODE == 0
+	testSorting(radix_sort, a, copy, MIN_N, MAX_N, REPEAT, "radix sort");
+#endif
+
 	// pg intro sort
 	testSorting(pg_qsort, a, copy, MIN_N, MAX_N, REPEAT, "pg intro sort");
+
+	// pg intro sort once
+	testSorting(pg_qsort_once, a, copy, MIN_N, MAX_N, REPEAT, "pg intro sort - 1 preordered check");
+
+	// pg qsort
+	testSorting(rand_pg_qsort, a, copy, MIN_N, MAX_N, REPEAT, "rand pg_qsort");
 
 	// pg qsort
 	testSorting(old_pg_qsort, a, copy, MIN_N, MAX_N, REPEAT, "pg_qsort");

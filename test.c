@@ -6,8 +6,7 @@
 #include "benchmark.h"
 
 int main() {
-	/*freopen("result.txt", "w", stdout);*/
+	freopen("result.csv", "w", stdout);
 	test();
-	system("pause");
 	return 0;
 }
