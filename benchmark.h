@@ -32,6 +32,16 @@ int(0), char(1), string(2), struct
 #define SORT_TYPE char*
 #define STR_GEN
 #define MAX_STR_LEN 20
+#elif TYPE_CODE == 2
+//high cardinality string
+#define SORT_TYPE char*
+#define STR_GEN
+#define MAX_STR_LEN 20
+#elif TYPE_CODE == 3
+//high cardinality double
+#define SORT_TYPE double
+#define MAX_INT 10000000
+#define DOU_GEN
 #endif
 
 
@@ -42,7 +52,7 @@ int(0), char(1), string(2), struct
 #endif
 
 #define BIN_NUM 100
-#define MIN_N 10000
+#define MIN_N 100000
 #define MAX_N 10000000
 #define REPEAT 5
 //#define PRINTOUT

@@ -131,6 +131,8 @@ static SORT_TYPE upperBound() {
 #elif defined STR_GEN
 	static char str[MAX_STR_LEN + 1];
 	return get_max_str(str, MAX_STR_LEN);
+#elif defined DOU_GEN
+	return (double)MAX_INT;
 #endif
 }
 
@@ -291,6 +293,8 @@ static void generateTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 #elif defined STR_GEN
 		a[i] = malloc(sizeof(char)*MAX_STR_LEN);
 		rand_string(a[i], MAX_STR_LEN);
+#elif defined DOU_GEN
+		a[i] = (double)random_int(MAX_INT);
 #endif
 	}
 
@@ -326,6 +330,8 @@ static void generateTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 		fprintf(f, "%d ", a[i]);
 #elif defined STR_GEN
 		fprintf(f, "%s ", a[i]);
+#elif defined DOU_GEN
+		fprintf(f, "%lf ", a[i]);
 #endif
 	}
 
@@ -347,6 +353,8 @@ static void readTestData(SORT_TYPE* a, enum Pattern pattern, int size) {
 #elif defined STR_GEN
 		a[i] = malloc(sizeof(char)*MAX_STR_LEN);
 		fscanf(f, "%s", a[i]);
+#elif defined DOU_GEN
+		fscanf(f, "%lf", &a[i]);
 #endif
 	}
 
@@ -421,7 +429,7 @@ void test() {
 
 	testSorting(quick_sort, a, copy, MIN_N, MAX_N, REPEAT, "median of 3 quick sort");
 
-#if TYPECODE == 0
+#ifdef INT_GEN
 	testSorting(radix_sort, a, copy, MIN_N, MAX_N, REPEAT, "radix sort");
 #endif
 
