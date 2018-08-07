@@ -374,6 +374,9 @@ void testSorting(void(*sort)(void*, size_t,size_t,int(*)(const void*,const void*
 
 	for (enum Pattern p = SORTED; p <= KILLER; p++) {
 		for (int n = min; n <= max; n *= 10) {
+			if (p == KILLER && n > max / 10) {
+				break;
+			}
 			char fname[30];
 			makeFileName(fname, p, n);
 			if (!file_exist(fname)) {
@@ -427,7 +430,7 @@ void test() {
 
 	testSorting(dual_pivot_quick_sort, a, copy, MIN_N, MAX_N, REPEAT, "dual pivot quick sort");
 
-	testSorting(quick_sort, a, copy, MIN_N, MAX_N, REPEAT, "median of 3 quick sort");
+	//testSorting(quick_sort, a, copy, MIN_N, MAX_N, REPEAT, "median of 3 quick sort");
 
 #ifdef INT_GEN
 	testSorting(radix_sort, a, copy, MIN_N, MAX_N, REPEAT, "radix sort");

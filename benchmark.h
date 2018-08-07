@@ -20,7 +20,7 @@ int(0), char(1), string(2), struct
 #if TYPE_CODE == 0
 //high cardinality int
 #define SORT_TYPE int
-#define MAX_INT 10000000
+#define MAX_INT 1000000000
 #define INT_GEN
 #elif TYPE_CODE == 1
 //characters
@@ -31,16 +31,26 @@ int(0), char(1), string(2), struct
 //high cardinality string
 #define SORT_TYPE char*
 #define STR_GEN
-#define MAX_STR_LEN 20
-#elif TYPE_CODE == 2
-//high cardinality string
-#define SORT_TYPE char*
-#define STR_GEN
-#define MAX_STR_LEN 20
+#define MAX_STR_LEN 10
 #elif TYPE_CODE == 3
 //high cardinality double
 #define SORT_TYPE double
-#define MAX_INT 10000000
+#define MAX_INT 100000000
+#define DOU_GEN
+#elif TYPE_CODE == 4
+//low cardinality int
+#define SORT_TYPE int
+#define MAX_INT 10000
+#define INT_GEN
+#elif TYPE_CODE == 5
+//low cardinality int
+#define SORT_TYPE char*
+#define STR_GEN
+#define MAX_STR_LEN 2
+#elif TYPE_CODE == 6
+//high cardinality double
+#define SORT_TYPE double
+#define MAX_INT 10000
 #define DOU_GEN
 #endif
 
